@@ -1,9 +1,9 @@
 RPI_VERSION ?= 3
-BOOTMNT ?= /media/parallels/boot
+BOOTMNT ?= bin
 
 ARMGNU ?= aarch64-linux-gnu
 
-COPS = -DRPI_VERSION=$(RPI_VERSION) -Wall -nostlib -nostartfile ffreestanding \
+COPS = -DRPI_VERSION=$(RPI_VERSION) -Wall -nostdlib -nostartfiles -ffreestanding \
 		-Iinclude -mgeneral-regs-only
 
 
@@ -19,16 +19,16 @@ clean :
 
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
-	$(ARMGNU)-gcc $(COPS) -MMD -c $< $@
+	$(ARMGNU)-gcc $(COPS) -MMD -c $< -o $@
 
 $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
 	mkdir -p $(@D)
-	$(ARMGNU)-gcc $(COPS) -MMD -c $< $@
+	$(ARMGNU)-gcc $(COPS) -MMD -c $< -o $@
 
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
 OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
-OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)%_s.o)
+OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
 
 DEP_FILES = $(OBJ_FILES:%.o=%.d)
 -include $(DEP_FILES)
@@ -38,12 +38,12 @@ kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
 	@echo "Deploy to $(value BOOTMNT)"
 	@echo ""
 	$(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel8.elf $(OBJ_FILES)
-	$(ARMGNU)-objcopy $(BUILD_DIR)/kernel8.elf -o binary kernel8.img
+	$(ARMGNU)-objcopy $(BUILD_DIR)/kernel8.elf -O binary kernel8.img
 
 ifeq ($(RPI_VERSION), 3)
 	cp kernel8.img $(BOOTMNT)/kernel8-rpi3.img
 else
-	cp kernel8img $(BOOTMNT)/
+	cp kernel8.img $(BOOTMNT)/
 endif
 	cp config.txt $(BOOTMNT)/
 	sync
